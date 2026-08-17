@@ -6,15 +6,14 @@
     <title>IF Fasting Tracker - Personal Journey</title>
     
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#3D9988">
+    <meta name="theme-color" content="#F8F6F0">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="IF Tracker">
     <meta name="description" content="Personal Fasting Journey PWA - แอปพลิเคชันนับเวลาทำ Intermittent Fasting ส่วนตัว">
 
-    <!-- Web App Manifest -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-512.png">
+    <!-- Web App Manifest Dynamic Generation -->
+    <link rel="manifest" id="manifest-placeholder">
 
     <!-- Google Fonts: Inter & Sarabun -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,8 +24,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-    
+
     <script>
         tailwind.config = {
             theme: {
