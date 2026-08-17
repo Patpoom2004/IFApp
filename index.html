@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>IF Fasting Tracker - Personal Journey</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#F8F6F0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="IF Tracker">
+    <meta name="description" content="Personal Fasting Journey PWA - แอปพลิเคชันนับเวลาทำ Intermittent Fasting ส่วนตัว">
+
+    <!-- Web App Manifest Dynamic Generation -->
+    <link rel="manifest" id="manifest-placeholder">
+
+    <!-- Google Fonts: Inter & Sarabun -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN for utility styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'soft-bg-start': '#F8F6F0',
+                        'soft-bg-end': '#EFE8DC',
+                        'mint-primary': '#3D9988',
+                        'mint-light': '#E8F5F2',
+                        'slate-dark': '#2D3748',
+                        'coral-pink': '#FF8F73',
+                        'card-bg': 'rgba(255, 255, 255, 0.75)',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Sarabun', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'soft-neu': '10px 10px 20px #e0d9cd, -10px -10px 20px #ffffff',
+                        'soft-inset': 'inset 4px 4px 8px #e0d9cd, inset -4px -4px 8px #ffffff',
+                        'glass': '0 8px 32px 0 rgba(165, 155, 135, 0.15)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Styles for Soft Neumorphism & Smooth Layout */
+        body {
+            background: linear-gradient(180deg, #F8F6F0 0%, #EFE8DC 100%);
+            color: #2D3748;
+            font-family: 'Inter', 'Sarabun', sans-serif;
+            min-height: 100vh;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        /* Responsive aspect ratio container for Vivo iQOO 13 (20:9 aspect ratio target) */
+        .app-container {
+            max-width: 440px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            box-shadow: 0 0 40px rgba(0,0,0,0.05);
+            padding-bottom: env(safe-area-inset-bottom, 16px);
+        }
+
+        /* Glassmorphism Card Style */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 28px;
+            transition: all 0.3s ease;
+        }
+
+        .glass-modal {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 32px 32px 0 0;
+        }
+
+        /* Soft Neumorphic Ring & Buttons */
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.35s ease-in-out;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        .btn-soft-primary {
+            background: #3D9988;
+            color: #ffffff;
+            box-shadow: 0 8px 20px rgba(61, 153, 136, 0.3);
+            transition: all 0.2s ease;
+        }
+        .btn-soft-primary:active {
+            transform: scale(0.97);
+            box-shadow: 0 4px 10px rgba(61, 153, 136, 0.2);
+        }
+
+        .btn-soft-secondary {
+            background: rgba(255, 255, 255, 0.8);
+            color: #2D3748;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 4px 4px 12px rgba(210, 200, 185, 0.3), -4px -4px 12px #ffffff;
+            transition: all 0.2s ease;
+        }
+        .btn-soft-secondary:active {
+            transform: scale(0.97);
+            box-shadow: inset 2px 2px 5px rgba(210, 200, 185, 0.4);
+        }
+
+        /* Pulse animation for active body status indicator */
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.15); }
+        }
+        .live-dot {
+            animation: livePulse 1.8s infinite ease-in-out;
+        }
+
+        /* Custom Scrollbar */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Hidden Input for Uploading Profile Avatar from Device Gallery -->
+    <input type="file" id="global-avatar-picker" accept="image/*" class="hidden" onchange="handleImageSelected(event)">
+
+    <!-- App Main Container -->
+    <div class="app-container px-5 pt-8 pb-6">
+        
+        <!-- Header -->
+        <header id="main-header" class="flex justify-between items-center mb-4">
+            <div class="flex items-center space-x-3">
+                <!-- Top-Left Circular Profile Avatar Icon -->
+                <button onclick="handleAvatarClick()" class="relative w-11 h-11 rounded-full glass-card flex items-center justify-center text-slate-dark hover:bg-white transition-all active:scale-95 shadow-sm overflow-hidden border-2 border-mint-primary/40">
+                    <div id="avatar-icon-container" class="w-full h-full flex items-center justify-center bg-mint-light text-mint-primary font-bold text-sm">
+                        <i data-lucide="user" class="w-5 h-5"></i>
+                    </div>
+                    <!-- Status Notification Badge for Guest -->
+                    <span id="avatar-status-dot" class="absolute top-0 right-0 w-3 h-3 bg-coral-pink border-2 border-white rounded-full"></span>
+                </button>
+
+                <div>
+                    <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase" id="lbl-header-sub">Personal IF Journey</span>
+                    <h1 class="text-xl font-bold text-slate-dark leading-tight" id="header-title">แดชบอร์ดถือศีลอด</h1>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <!-- Language Switcher Toggle Button -->
+                <button onclick="toggleLanguage()" class="px-3 py-2 rounded-2xl glass-card flex items-center space-x-1.5 text-xs font-bold text-slate-dark hover:bg-white transition-all active:scale-95 shadow-sm">
+                    <span id="lang-flag">🇹🇭</span>
+                    <span id="lang-code">TH</span>
+                </button>
+                
+                <button onclick="switchTab('settings')" class="w-10 h-10 rounded-2xl glass-card flex items-center justify-center text-slate-dark hover:bg-white transition-all active:scale-95 shadow-sm">
+                    <i data-lucide="settings" class="w-5 h-5 text-slate-600"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dynamic Navigation Content Views -->
+        <main id="main-content" class="flex-1 flex flex-col justify-between my-2">
+            
+            <!-- Dashboard View -->
+            <section id="view-dashboard" class="flex-1 flex flex-col justify-between space-y-4">
+                
+                <!-- Main Timer Progress Ring Section -->
+                <div class="glass-card p-6 flex flex-col items-center justify-center relative overflow-hidden shadow-glass">
+                    <!-- Dynamic Glowing Background Indicator -->
+                    <div id="status-glow" class="absolute w-48 h-48 rounded-full bg-mint-primary/10 blur-3xl pointer-events-none transition-all duration-700"></div>
+
+                    <div class="relative w-60 h-60 flex items-center justify-center">
+                        <svg class="w-full h-full" viewBox="0 0 200 200">
+                            <!-- Background Track Circle -->
+                            <circle cx="100" cy="100" r="82" stroke="#EAE3D2" stroke-width="12" fill="none" />
+                            <!-- Animated Progress Circle -->
+                            <circle id="progress-circle" class="progress-ring-circle" cx="100" cy="100" r="82" 
+                                    stroke="#3D9988" stroke-width="12" stroke-linecap="round" fill="none" 
+                                    stroke-dasharray="515.22" stroke-dashoffset="515.22" />
+                        </svg>
+
+                        <!-- Central Status Text -->
+                        <div class="absolute flex flex-col items-center text-center">
+                            <span id="timer-status-badge" class="px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full bg-mint-light text-mint-primary mb-1">
+                                กำลัง FASTING
+                            </span>
+                            <div id="timer-display" class="text-3xl font-extrabold tracking-tight text-slate-dark my-1 font-mono">
+                                00h 00m
+                            </div>
+                            <span id="timer-subtext" class="text-xs font-medium text-gray-500">
+                                เหลือเวลาอีก 16h 00m
+                            </span>
+                            <span id="target-end-time" class="text-[11px] text-gray-400 mt-1">
+                                สิ้นสุดเวลา: --:-- น.
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Fasting Schedule Timeline Banner -->
+                    <div class="mt-4 w-full grid grid-cols-2 gap-2 text-center">
+                        <div class="px-3 py-2 bg-white/60 rounded-2xl border border-white/80">
+                            <div class="text-[10px] text-gray-400 font-semibold uppercase" id="lbl-start-fast-time">เวลาเริ่ม อดอาหาร</div>
+                            <div id="display-start-time" class="text-xs font-bold text-slate-dark mt-0.5">--:-- น.</div>
+                        </div>
+                        <div class="px-3 py-2 bg-white/60 rounded-2xl border border-white/80">
+                            <div class="text-[10px] text-gray-400 font-semibold uppercase" id="lbl-start-eat-time">เวลาเริ่ม กินอาหาร</div>
+                            <div id="display-eat-time" class="text-xs font-bold text-mint-primary mt-0.5">--:-- น.</div>
+                        </div>
+                    </div>
+
+                    <!-- Fasting Plan Selector Display -->
+                    <div class="mt-2 w-full flex items-center justify-between px-3 py-2 bg-white/60 rounded-2xl border border-white/80">
+                        <span class="text-xs text-gray-500 font-medium" id="lbl-current-plan">แผนปัจจุบัน:</span>
+                        <div class="flex items-center space-x-2">
+                            <span id="current-plan-name" class="text-xs font-bold text-slate-dark">16:8 Plan</span>
+                            <button onclick="openPlanModal()" class="text-mint-primary hover:underline text-xs font-semibold flex items-center">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5 ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Real-time Body Status Indicator & Phase Bar Card -->
+                <div class="glass-card p-4 shadow-glass space-y-3 transition-all duration-300">
+                    
+                    <!-- Header with Live Indicator Tag -->
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 live-dot"></span>
+                            <span class="text-xs font-bold text-slate-dark" id="lbl-body-status-header">สภาวะร่างกายปัจจุบัน</span>
+                        </div>
+                        <span id="body-status-badge-live" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-600 flex items-center space-x-1">
+                            <span>0.0 ชม.</span>
+                        </span>
+                    </div>
+
+                    <!-- 4-Phase Visual Timeline Bar -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[9px] text-gray-400 font-semibold px-0.5">
+                            <span>0h</span>
+                            <span>4h</span>
+                            <span>12h</span>
+                            <span>16h+</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden flex p-0.5 space-x-0.5 shadow-inner">
+                            <div id="bar-phase-1" class="h-full w-1/4 rounded-l-full bg-blue-300 opacity-30 transition-all duration-500"></div>
+                            <div id="bar-phase-2" class="h-full w-2/4 bg-teal-300 opacity-30 transition-all duration-500"></div>
+                            <div id="bar-phase-3" class="h-full w-1/4 bg-amber-400 opacity-30 transition-all duration-500"></div>
+                            <div id="bar-phase-4" class="h-full w-1/4 rounded-r-full bg-purple-400 opacity-30 transition-all duration-500"></div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Body Status Details -->
+                    <div class="flex items-start space-x-3 pt-1">
+                        <div id="body-status-icon-bg" class="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600 shadow-sm transition-all duration-300">
+                            <i data-lucide="utensils" id="body-status-icon" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center">
+                                <h3 id="body-status-title" class="text-xs font-bold text-slate-dark">Anabolic Phase (ย่อยอาหาร)</h3>
+                            </div>
+                            <p id="body-status-desc" class="text-[11px] text-gray-600 mt-0.5 leading-relaxed">
+                                ระดับน้ำตาลในเลือดเพิ่มขึ้น ร่างกายกำลังย่อยและดูดซึมสารอาหารจากมื้อล่าสุด
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hydration / Water Log Widget -->
+                <div id="water-card" class="glass-card p-4 shadow-glass flex items-center justify-between transition-all duration-500">
+                    <div class="flex items-center space-x-3">
+                        <div id="water-icon-bg" class="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600 transition-all duration-300">
+                            <i data-lucide="droplet" id="water-icon" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-gray-500 font-medium" id="lbl-water-title">บันทึกการดื่มน้ำ</div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-bold text-slate-dark"><span id="water-count">0</span> / 8 <span id="lbl-water-unit">แก้ว (2.0 L)</span></span>
+                                <span id="water-badge-status" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white shadow-sm animate-bounce">
+                                    เพียงพอแล้ว! ✨
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="adjustWater(-1)" class="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-slate-dark active:scale-90 transition-all">
+                            <i data-lucide="minus" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="adjustWater(1)" class="w-9 h-9 rounded-xl bg-mint-primary text-white flex items-center justify-center active:scale-90 transition-all shadow-md">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Activity Logs View -->
+            <section id="view-activity" class="flex-1 flex-col space-y-4 hidden">
+                <div class="glass-card p-5">
+                    <h2 class="text-base font-bold text-slate-dark mb-3 flex items-center" id="lbl-weekly-stats">
+                        <i data-lucide="bar-chart-2" class="w-5 h-5 mr-2 text-mint-primary"></i> สถิติสัปดาห์นี้
+                    </h2>
+                    <div class="flex justify-between items-end h-32 pt-4 px-2" id="weekly-chart">
+                        <!-- Bar chart rendered dynamically -->
+                    </div>
+                </div>
+
+                <div class="glass-card p-5 flex-1 flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-base font-bold text-slate-dark" id="lbl-fasting-history">ประวัติการทำ Fasting</h2>
+                        <span class="text-xs text-gray-400" id="log-count-badge">0 รายการ</span>
+                    </div>
+                    <div id="fasting-logs-list" class="space-y-3 overflow-y-auto max-h-60 no-scrollbar flex-1 pr-1">
+                        <!-- Fasting logs injected via JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Profile View & Fat Loss Guide -->
+            <section id="view-profile" class="flex-1 flex-col space-y-4 hidden">
+                
+                <!-- Guest View Prompt when not logged in -->
+                <div id="profile-guest-prompt" class="glass-card p-6 text-center space-y-4">
+                    <div class="w-16 h-16 bg-mint-light rounded-full mx-auto flex items-center justify-center text-mint-primary">
+                        <i data-lucide="user-plus" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-dark" id="lbl-guest-title">เข้าสู่ระบบเพื่อวิเคราะห์ BMI</h3>
+                        <p class="text-xs text-gray-500 mt-1 leading-relaxed" id="lbl-guest-sub">เชื่อมต่อเบอร์โทรศัพท์ กรอกส่วนสูงและน้ำหนักเพื่อรับคำแนะนำการลีนหุ่นเฉพาะบุคคล</p>
+                    </div>
+                    <button onclick="openLoginModal()" class="btn-soft-primary w-full py-3 rounded-2xl text-xs font-bold shadow-md">
+                        เข้าสู่ระบบด้วยเบอร์โทรศัพท์
+                    </button>
+                </div>
+
+                <!-- User Profile Card (Shown when logged in) -->
+                <div id="profile-user-card" class="hidden space-y-4">
+                    <!-- BMI Card Summary -->
+                    <div class="glass-card p-5 space-y-4 shadow-glass">
+                        <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                            <div class="flex items-center space-x-3">
+                                <!-- Profile Photo with Gallery Change Trigger -->
+                                <div onclick="triggerGalleryUpload()" class="relative w-14 h-14 rounded-2xl bg-mint-light text-mint-primary flex items-center justify-center font-bold text-xl overflow-hidden cursor-pointer group shadow-sm border-2 border-mint-primary/30">
+                                    <div id="prof-avatar-display" class="w-full h-full flex items-center justify-center">
+                                        <span id="prof-avatar-letter">U</span>
+                                    </div>
+                                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <i data-lucide="camera" class="w-5 h-5"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex items-center space-x-2">
+                                        <h3 class="text-base font-bold text-slate-dark" id="prof-display-name">ผู้ใช้งาน</h3>
+                                        <button onclick="triggerGalleryUpload()" class="text-[10px] text-mint-primary font-bold bg-mint-light px-2 py-0.5 rounded-full hover:underline">
+                                            เปลี่ยนรูป
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-0.5" id="prof-display-phone">08X-XXX-XXXX</p>
+                                </div>
+                            </div>
+                            <button onclick="openEditProfileModal()" class="text-mint-primary p-2 bg-mint-light rounded-xl hover:bg-mint-primary hover:text-white transition-all">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="p-3 bg-white/70 rounded-2xl border border-white/80">
+                                <div class="text-[10px] text-gray-400 font-semibold" id="lbl-profile-weight">น้ำหนัก</div>
+                                <div class="text-sm font-bold text-slate-dark mt-0.5"><span id="prof-display-weight">--</span> kg</div>
+                            </div>
+                            <div class="p-3 bg-white/70 rounded-2xl border border-white/80">
+                                <div class="text-[10px] text-gray-400 font-semibold" id="lbl-profile-height">ส่วนสูง</div>
+                                <div class="text-sm font-bold text-slate-dark mt-0.5"><span id="prof-display-height">--</span> cm</div>
+                            </div>
+                            <div class="p-3 bg-white/70 rounded-2xl border border-white/80">
+                                <div class="text-[10px] text-gray-400 font-semibold">BMI</div>
+                                <div class="text-sm font-extrabold text-mint-primary mt-0.5" id="prof-display-bmi">--</div>
+                            </div>
+                        </div>
+
+                        <div class="px-4 py-2.5 bg-mint-light/60 rounded-2xl flex justify-between items-center">
+                            <span class="text-xs text-gray-600 font-medium" id="lbl-bmi-category">เกณฑ์มวลกาย:</span>
+                            <span id="bmi-status-tag" class="px-3 py-1 rounded-full text-xs font-bold bg-mint-primary text-white">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Fat Loss Guide Card -->
+                    <div class="glass-card p-5 space-y-3 max-h-72 overflow-y-auto no-scrollbar">
+                        <h3 class="text-sm font-bold text-slate-dark flex items-center" id="lbl-fatloss-guide-title">
+                            <i data-lucide="sparkles" class="w-4 h-4 text-coral-pink mr-2"></i> คำแนะนำสำหรับการลีนหุ่น
+                        </h3>
+
+                        <div class="space-y-3 text-xs" id="fatloss-guide-container">
+                            <!-- Dynamic Fat Loss Tips rendered in JS -->
+                        </div>
+                    </div>
+
+                    <button onclick="handleLogout()" class="w-full py-3 rounded-2xl bg-red-50 text-red-500 font-bold text-xs border border-red-100 hover:bg-red-100 transition-all">
+                        ออกจากระบบ (Logout)
+                    </button>
+                </div>
+
+            </section>
+
+            <!-- Settings / Calendar View -->
+            <section id="view-settings" class="flex-1 flex-col space-y-4 hidden">
+                <div class="glass-card p-5 space-y-4">
+                    <h2 class="text-base font-bold text-slate-dark border-b border-gray-100 pb-2" id="lbl-settings-title">การตั้งค่าและปฏิทิน</h2>
+                    
+                    <button onclick="addToCalendar()" class="w-full py-3.5 px-4 rounded-2xl bg-white border border-gray-200 flex items-center justify-between text-slate-dark active:scale-98 transition-all shadow-sm">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="calendar" class="w-5 h-5 text-mint-primary"></i>
+                            <div class="text-left">
+                                <div class="text-xs font-bold" id="lbl-export-cal">ส่งออกลงปฏิทิน (Calendar)</div>
+                                <div class="text-[11px] text-gray-500" id="lbl-export-cal-sub">ตั้งเตือนวันและเวลาจบ Fasting</div>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                    </button>
+
+                    <button onclick="triggerInstallPWA()" id="install-pwa-btn" class="w-full py-3.5 px-4 rounded-2xl bg-mint-light border border-mint-primary/20 flex items-center justify-between text-mint-primary active:scale-98 transition-all">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="download-cloud" class="w-5 h-5"></i>
+                            <div class="text-left">
+                                <div class="text-xs font-bold" id="lbl-install-pwa">เพิ่มลงในหน้าจอหลัก (PWA)</div>
+                                <div class="text-[11px] opacity-80" id="lbl-install-pwa-sub">ติดตั้งแอปเพื่อใช้งานแบบ Offline</div>
+                            </div>
+                        </div>
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    </button>
+
+                    <button onclick="clearAllData()" class="w-full py-3 px-4 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center text-xs font-bold border border-red-100 active:scale-98 transition-all">
+                        <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> <span id="lbl-clear-data">ล้างข้อมูลประวัติทั้งหมด</span>
+                    </button>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Lower Thumb-Zone Control Bar -->
+        <footer id="main-footer" class="mt-2 space-y-3 pt-2">
+            
+            <!-- Dynamic Main Action Controls (Thumb Zone 1/3 Bottom) -->
+            <div id="dashboard-controls" class="space-y-2">
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="btn-toggle-fast" onclick="toggleFastState()" class="btn-soft-primary py-4 rounded-2xl text-sm font-bold flex items-center justify-center space-x-2 shadow-lg">
+                        <i data-lucide="play" id="btn-toggle-icon" class="w-5 h-5 fill-current"></i>
+                        <span id="btn-toggle-text">เริ่มทำ Fasting</span>
+                    </button>
+                    
+                    <button onclick="openSchedulePlannerModal()" class="btn-soft-secondary py-4 rounded-2xl text-sm font-bold flex items-center justify-center space-x-2">
+                        <i data-lucide="calendar-clock" class="w-5 h-5 text-mint-primary"></i>
+                        <span id="btn-planner-text">ตั้งเวลา / วางแผน</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation Bar -->
+            <nav class="glass-card px-2 py-2 flex justify-around items-center rounded-3xl">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center py-1 px-3 rounded-2xl text-mint-primary font-bold transition-all">
+                    <i data-lucide="timer" class="w-5 h-5"></i>
+                    <span class="text-[10px] mt-0.5" id="nav-lbl-timer">จับเวลา</span>
+                </button>
+                <button onclick="switchTab('activity')" id="nav-activity" class="flex flex-col items-center py-1 px-3 rounded-2xl text-gray-400 font-medium transition-all">
+                    <i data-lucide="activity" class="w-5 h-5"></i>
+                    <span class="text-[10px] mt-0.5" id="nav-lbl-activity">กิจกรรม</span>
+                </button>
+                <button onclick="switchTab('profile')" id="nav-profile" class="flex flex-col items-center py-1 px-3 rounded-2xl text-gray-400 font-medium transition-all">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                    <span class="text-[10px] mt-0.5" id="nav-lbl-profile">โปรไฟล์</span>
+                </button>
+                <button onclick="switchTab('settings')" id="nav-settings" class="flex flex-col items-center py-1 px-3 rounded-2xl text-gray-400 font-medium transition-all">
+                    <i data-lucide="grid" class="w-5 h-5"></i>
+                    <span class="text-[10px] mt-0.5" id="nav-lbl-menu">เมนู</span>
+                </button>
+            </nav>
+        </footer>
+
+    </div>
+
+    <!-- Modal 1: Login Phone & Profile Setup Modal -->
+    <div id="modal-login" class="fixed inset-0 bg-black/40 z-50 hidden backdrop-blur-sm flex items-end justify-center">
+        <div class="glass-modal w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar">
+            <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-dark" id="modal-login-title">เข้าสู่ระบบ / ลงทะเบียน</h3>
+                    <p class="text-xs text-gray-400" id="modal-login-sub">ใช้เบอร์โทรศัพท์เพื่อเข้าใช้งานและคำนวณ BMI</p>
+                </div>
+                <button onclick="closeModal('modal-login')" class="p-1 rounded-full text-gray-400 hover:bg-gray-100">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Step 1: Input Details -->
+            <div id="login-step-1" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1" id="lbl-login-name">ชื่อของคุณ</label>
+                    <input type="text" id="input-login-name" placeholder="เช่น Alex" class="w-full p-3 rounded-2xl border border-gray-200 bg-white text-slate-dark text-sm focus:outline-none focus:border-mint-primary">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1" id="lbl-login-phone">เบอร์โทรศัพท์มือถือ</label>
+                    <input type="tel" id="input-login-phone" placeholder="08X-XXX-XXXX" class="w-full p-3 rounded-2xl border border-gray-200 bg-white text-slate-dark font-mono text-sm focus:outline-none focus:border-mint-primary">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1" id="lbl-login-height">ส่วนสูง (ซม.)</label>
+                        <input type="number" id="input-login-height" placeholder="175" class="w-full p-3 rounded-2xl border border-gray-200 bg-white text-slate-dark font-mono text-sm focus:outline-none focus:border-mint-primary">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1" id="lbl-login-weight">น้ำหนัก (กก.)</label>
+                        <input type="number" id="input-login-weight" placeholder="70" class="w-full p-3 rounded-2xl border border-gray-200 bg-white text-slate-dark font-mono text-sm focus:outline-none focus:border-mint-primary">
+                    </div>
+                </div>
+
+                <button onclick="proceedToOtp()" class="btn-soft-primary w-full py-3.5 rounded-2xl text-xs font-bold mt-2 shadow-md">
+                    รับรหัสยืนยัน OTP
+                </button>
+            </div>
+
+            <!-- Step 2: OTP Verification -->
+            <div id="login-step-2" class="space-y-4 hidden text-center">
+                <p class="text-xs text-gray-500">กรอกรหัสยืนยัน 6 หลักที่ส่งไปยังเบอร์ <br><span id="display-otp-phone" class="font-bold text-slate-dark font-mono">08X-XXX-XXXX</span></p>
+                
+                <input type="text" id="input-otp-code" maxlength="6" value="123456" class="w-full p-3 text-center tracking-[10px] text-xl font-bold font-mono rounded-2xl border border-mint-primary bg-mint-light/40 text-mint-primary focus:outline-none">
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button onclick="backToLoginStep1()" class="py-3 rounded-2xl bg-gray-100 text-gray-700 text-xs font-bold">ย้อนกลับ</button>
+                    <button onclick="verifyOtpAndLogin()" class="py-3 rounded-2xl bg-mint-primary text-white text-xs font-bold shadow-md">ยืนยันรหัส OTP</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Select Fasting Plan -->
+    <div id="modal-plan" class="fixed inset-0 bg-black/40 z-50 hidden backdrop-blur-sm flex items-end justify-center transition-opacity">
+        <div class="glass-modal w-full max-w-md p-6 space-y-4 animate-slide-up">
+            <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-dark" id="modal-plan-title">เลือกแผนการอดอาหาร (IF)</h3>
+                <button onclick="closeModal('modal-plan')" class="p-1 rounded-full text-gray-400 hover:bg-gray-100">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div onclick="selectPlan('16:8', 16)" class="p-4 rounded-2xl border border-gray-200 bg-white hover:border-mint-primary cursor-pointer transition-all flex items-center justify-between">
+                    <div>
+                        <div class="font-bold text-slate-dark text-sm">16:8 Standard</div>
+                        <div class="text-xs text-gray-500" id="plan-desc-168">Fast 16 ชม. / กินได้ 8 ชม. (แนะนำสำหรับผู้เริ่มต้น)</div>
+                    </div>
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-mint-primary opacity-0 plan-check" id="check-16:8"></i>
+                </div>
+
+                <div onclick="selectPlan('18:6', 18)" class="p-4 rounded-2xl border border-gray-200 bg-white hover:border-mint-primary cursor-pointer transition-all flex items-center justify-between">
+                    <div>
+                        <div class="font-bold text-slate-dark text-sm">18:6 Advanced</div>
+                        <div class="text-xs text-gray-500" id="plan-desc-186">Fast 18 ชม. / กินได้ 6 ชม. (เร่งการเผาผลาญไขมัน)</div>
+                    </div>
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-mint-primary opacity-0 plan-check" id="check-18:6"></i>
+                </div>
+
+                <div onclick="selectPlan('20:4', 20)" class="p-4 rounded-2xl border border-gray-200 bg-white hover:border-mint-primary cursor-pointer transition-all flex items-center justify-between">
+                    <div>
+                        <div class="font-bold text-slate-dark text-sm">20:4 Warrior Diet</div>
+                        <div class="text-xs text-gray-500" id="plan-desc-204">Fast 20 ชม. / กินได้ 4 ชม.</div>
+                    </div>
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-mint-primary opacity-0 plan-check" id="check-20:4"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Fasting Schedule Planner -->
+    <div id="modal-schedule-planner" class="fixed inset-0 bg-black/40 z-50 hidden backdrop-blur-sm flex items-end justify-center">
+        <div class="glass-modal w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar">
+            <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-dark" id="modal-planner-title">วางแผนตารางเวลา Fasting</h3>
+                    <p class="text-xs text-gray-400" id="modal-planner-sub">กำหนดเวลาเริ่มและเวลากินอาหารล่วงหน้า</p>
+                </div>
+                <button onclick="closeModal('modal-schedule-planner')" class="p-1 rounded-full text-gray-400 hover:bg-gray-100">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Fasting Time Mode Selector Tab -->
+            <div class="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-2xl">
+                <button onclick="setScheduleMode('start')" id="mode-btn-start" class="py-2 text-xs font-bold rounded-xl bg-white text-slate-dark shadow-sm transition-all">
+                    กำหนดเวลาเริ่ม
+                </button>
+                <button onclick="setScheduleMode('custom')" id="mode-btn-custom" class="py-2 text-xs font-bold rounded-xl text-gray-500 hover:text-slate-dark transition-all">
+                    กำหนดช่วงเวลาเริ่ม - จบ
+                </button>
+            </div>
+
+            <!-- Option A: Start Time Only -->
+            <div id="planner-start-container" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1" id="lbl-planner-start-time">วันและเวลาเริ่ม อดอาหาร:</label>
+                    <input type="datetime-local" id="input-schedule-start" onchange="calculatePlannerSummary()" class="w-full p-3 rounded-2xl border border-gray-200 bg-white text-slate-dark font-mono text-sm focus:outline-none focus:border-mint-primary">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1" id="lbl-planner-target-hrs">จำนวนชั่วโมง Fasting Target:</label>
+                    <select id="input-schedule-hours" onchange="calculatePlannerSummary()" class="w-full p-3 rounded-2xl border border-gray-200 bg-white text-slate-dark text-sm focus:outline-none focus:border-mint-primary">
+                        <option value="12">12 ชั่วโมง (Easy)</option>
+                        <option value="14">14 ชั่วโมง (Moderate)</option>
+                        <option value="16" selected>16 ชั่วโมง (Standard 16:8)</option>
+                        <option value="18">18 ชั่วโมง (Advanced 18:6)</option>
+                        <option value="20">20 ชั่วโมง (Warrior 20:4)</option>
+                        <option value="24">24 ชั่วโมง (OMAD 24h)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Option B: Start Time and End Time Custom -->
+            <div id="planner-custom-container" class="space-y-3 hidden">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1" id="lbl-planner-cust-start">วันและเวลาเริ่ม อดอาหาร:</label>
+                    <input type="datetime-local" id="input-custom-start" onchange="calculatePlannerSummary()" class="w-full p-3 rounded-2xl border border-gray-200 bg-white text-slate-dark font-mono text-sm focus:outline-none focus:border-mint-primary">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1" id="lbl-planner-cust-end">วันและเวลาที่ตั้งเป้า จบอดอาหาร (กินได้):</label>
+                    <input type="datetime-local" id="input-custom-end" onchange="calculatePlannerSummary()" class="w-full p-3 rounded-2xl border border-gray-200 bg-white text-slate-dark font-mono text-sm focus:outline-none focus:border-mint-primary">
+                </div>
+            </div>
+
+            <!-- Dynamic Schedule Summary Box -->
+            <div class="p-4 bg-mint-light/60 rounded-2xl border border-mint-primary/20 space-y-2">
+                <div class="text-xs font-bold text-mint-primary flex items-center" id="lbl-planner-summary-title">
+                    <i data-lucide="sparkles" class="w-4 h-4 mr-1.5"></i> สรุปตารางเวลา Fasting ของคุณ
+                </div>
+                <div class="text-xs text-slate-dark space-y-1">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500" id="lbl-summary-duration">ระยะเวลา Fasting:</span>
+                        <span id="summary-fast-duration" class="font-bold text-slate-dark">16 ชั่วโมง 0 นาที</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500" id="lbl-summary-start">เริ่ม Fasting:</span>
+                        <span id="summary-start-formatted" class="font-bold">--:-- น.</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500" id="lbl-summary-end">เริ่มกินอาหารได้ (End Fast):</span>
+                        <span id="summary-end-formatted" class="font-bold text-mint-primary">--:-- น.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="closeModal('modal-schedule-planner')" class="py-3 rounded-2xl bg-gray-100 text-gray-700 text-sm font-bold" id="btn-planner-cancel">ยกเลิก</button>
+                <button onclick="applyFastingSchedule()" class="py-3 rounded-2xl bg-mint-primary text-white text-sm font-bold shadow-md" id="btn-planner-save">บันทึกตารางเวลานี้</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 4: Edit Profile Modal -->
+    <div id="modal-edit-profile" class="fixed inset-0 bg-black/40 z-50 hidden backdrop-blur-sm flex items-end justify-center">
+        <div class="glass-modal w-full max-w-md p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-dark" id="modal-edit-prof-title">แก้ไขโปรไฟล์ส่วนตัว</h3>
+                <button onclick="closeModal('modal-edit-profile')" class="p-1 rounded-full text-gray-400 hover:bg-gray-100">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 py-2">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1" id="lbl-edit-name">ชื่อผู้ใช้งาน:</label>
+                    <input type="text" id="input-edit-name" class="w-full p-3 rounded-2xl border border-gray-200 bg-white text-slate-dark font-bold text-sm focus:outline-none focus:border-mint-primary shadow-inner">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1" id="lbl-edit-height">ส่วนสูง (เซนติเมตร):</label>
+                    <input type="number" id="input-edit-height" class="w-full p-3 rounded-2xl border border-gray-200 bg-white text-slate-dark font-bold text-sm focus:outline-none focus:border-mint-primary shadow-inner">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1" id="lbl-edit-weight">น้ำหนักปัจจุบัน (กิโลกรัม):</label>
+                    <input type="number" id="input-edit-weight" class="w-full p-3 rounded-2xl border border-gray-200 bg-white text-slate-dark font-bold text-sm focus:outline-none focus:border-mint-primary shadow-inner">
+                </div>
+                <button type="button" onclick="triggerGalleryUpload()" class="w-full py-2.5 rounded-2xl border border-mint-primary text-mint-primary text-xs font-bold flex items-center justify-center space-x-2 bg-mint-light/50 hover:bg-mint-light">
+                    <i data-lucide="image" class="w-4 h-4"></i>
+                    <span>อัปโหลดรูปภาพจากแกลเลอรีมือถือ</span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="closeModal('modal-edit-profile')" class="py-3 rounded-2xl bg-gray-100 text-gray-700 text-sm font-bold">ยกเลิก</button>
+                <button onclick="saveProfileChanges()" class="py-3 rounded-2xl bg-mint-primary text-white text-sm font-bold shadow-md">บันทึกข้อมูลใหม่</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Message -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-slate-dark text-white text-xs font-medium px-4 py-2.5 rounded-2xl shadow-xl opacity-0 transition-all pointer-events-none z-50 flex items-center space-x-2">
+        <i data-lucide="info" class="w-4 h-4 text-mint-primary"></i>
+        <span id="toast-message">บันทึกข้อมูลเรียบร้อย</span>
+    </div>
+
+    <!-- PWA Service Worker & Application Logic -->
+    <script>
+        // Setup Web App Manifest Dynamically
+        const manifestData = {
+            "name": "IF Fasting Tracker",
+            "short_name": "IF Tracker",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#F8F6F0",
+            "theme_color": "#F8F6F0",
+            "description": "Personal Fasting Journey PWA",
+            "icons": [{
+                "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%233D9988'/><path d='M50 20 v30 h20' stroke='white' stroke-width='8' stroke-linecap='round' fill='none'/></svg>",
+                "sizes": "192x192 512x512",
+                "type": "image/svg+xml"
+            }]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+        document.getElementById('manifest-placeholder').setAttribute('href', URL.createObjectURL(manifestBlob));
+
+        // State Management variables
+        let appState = {
+            lang: 'th',
+            userProfile: null, // { name, phone, height, weight, bmi, bmiCategory, avatarUrl }
+            isFasting: false,
+            startTime: null,
+            targetEndTime: null,
+            planHours: 16,
+            planName: '16:8',
+            waterCount: 0,
+            historyLogs: []
+        };
+
+        let pendingLoginData = null;
+
+        // Language Translation Dictionary
+        const translations = {
+            th: {
+                headerSub: 'Personal IF Journey',
+                headerTitle: 'แดชบอร์ดถือศีลอด',
+                timerStatusFasting: 'กำลัง FASTING',
+                timerStatusGoal: 'สำเร็จเป้าหมาย',
+                timerSubtextIdle: 'กดปุ่มเพื่อเริ่มหรือตั้งตารางเวลา',
+                timerSubtextGoal: 'บรรลุเป้าหมายการ Fasting แล้ว!',
+                lblStartFast: 'เวลาเริ่ม อดอาหาร',
+                lblStartEat: 'เวลาเริ่ม กินอาหาร',
+                lblCurrentPlan: 'แผนปัจจุบัน:',
+                lblWaterTitle: 'บันทึกการดื่มน้ำ',
+                lblWaterUnit: 'แก้ว (2.0 L)',
+                waterStatusGoal: 'เพียงพอแล้ว! ✨',
+                lblWeeklyStats: 'สถิติสัปดาห์นี้',
+                lblFastingHistory: 'ประวัติการทำ Fasting',
+                lblBodyStatusHeader: 'สภาวะร่างกายปัจจุบัน',
+                lblGuestTitle: 'เข้าสู่ระบบเพื่อวิเคราะห์ BMI',
+                lblGuestSub: 'เชื่อมต่อเบอร์โทรศัพท์ กรอกส่วนสูงและน้ำหนักเพื่อรับคำแนะนำการลีนหุ่นเฉพาะบุคคล',
+                lblProfileWeight: 'น้ำหนัก',
+                lblProfileHeight: 'ส่วนสูง',
+                lblBmiCategory: 'เกณฑ์มวลกาย:',
+                lblFatlossGuideTitle: 'คำแนะนำสำหรับการลีนหุ่น',
+                lblSettingsTitle: 'การตั้งค่าและปฏิทิน',
+                lblExportCal: 'ส่งออกลงปฏิทิน (Calendar)',
+                lblExportCalSub: 'ตั้งเตือนวันและเวลาจบ Fasting',
+                lblInstallPWA: 'เพิ่มลงในหน้าจอหลัก (PWA)',
+                lblInstallPWASub: 'ติดตั้งแอปเพื่อใช้งานแบบ Offline',
+                lblClearData: 'ล้างข้อมูลประวัติทั้งหมด',
+                btnStartFast: 'เริ่มทำ Fasting',
+                btnStopFast: 'จบการ Fasting',
+                btnPlanner: 'ตั้งเวลา / วางแผน',
+                navTimer: 'จับเวลา',
+                navActivity: 'กิจกรรม',
+                navProfile: 'โปรไฟล์',
+                navMenu: 'เมนู',
+                modalLoginTitle: 'เข้าสู่ระบบ / ลงทะเบียน',
+                modalLoginSub: 'ใช้เบอร์โทรศัพท์เพื่อเข้าใช้งานและคำนวณ BMI',
+                lblLoginName: 'ชื่อของคุณ',
+                lblLoginPhone: 'เบอร์โทรศัพท์มือถือ',
+                lblLoginHeight: 'ส่วนสูง (ซม.)',
+                lblLoginWeight: 'น้ำหนัก (กก.)',
+                modalPlanTitle: 'เลือกแผนการอดอาหาร (IF)',
+                plan168Desc: 'Fast 16 ชม. / กินได้ 8 ชม. (แนะนำสำหรับผู้เริ่มต้น)',
+                plan186Desc: 'Fast 18 ชม. / กินได้ 6 ชม. (เร่งการเผาผลาญไขมัน)',
+                plan204Desc: 'Fast 20 ชม. / กินได้ 4 ชม.',
+                modalPlannerTitle: 'วางแผนตารางเวลา Fasting',
+                modalPlannerSub: 'กำหนดเวลาเริ่มและเวลากินอาหารล่วงหน้า',
+                modeBtnStart: 'กำหนดเวลาเริ่ม',
+                modeBtnCustom: 'กำหนดช่วงเวลาเริ่ม - จบ',
+                lblPlannerStartTime: 'วันและเวลาเริ่ม อดอาหาร:',
+                lblPlannerTargetHrs: 'จำนวนชั่วโมง Fasting Target:',
+                lblPlannerCustStart: 'วันและเวลาเริ่ม อดอาหาร:',
+                lblPlannerCustEnd: 'วันและเวลาที่ตั้งเป้า จบอดอาหาร (กินได้):',
+                lblPlannerSummaryTitle: 'สรุปตารางเวลา Fasting ของคุณ',
+                lblSummaryDuration: 'ระยะเวลา Fasting:',
+                lblSummaryStart: 'เริ่ม Fasting:',
+                lblSummaryEnd: 'เริ่มกินอาหารได้ (End Fast):',
+                btnPlannerCancel: 'ยกเลิก',
+                btnPlannerSave: 'บันทึกตารางเวลานี้',
+                modalEditProfTitle: 'แก้ไขโปรไฟล์ส่วนตัว',
+                toastWaterFull: 'ยอดเยี่ยม! คุณดื่มน้ำครบ 8 แก้วเพียงพอต่อวันแล้ว 🎉',
+                toastStartFast: 'เริ่มทำ Fasting แล้ว! สู้ๆ ครับ',
+                toastStopFast: 'จบ Fasting แล้ว! ทำไปได้ {hrs} ชม.',
+                toastClearData: 'ล้างข้อมูลเรียบร้อยแล้ว'
+            },
+            en: {
+                headerSub: 'Personal IF Journey',
+                headerTitle: 'Fasting Dashboard',
+                timerStatusFasting: 'FASTING ACTIVE',
+                timerStatusGoal: 'GOAL REACHED',
+                timerSubtextIdle: 'Tap button to start or plan fast',
+                timerSubtextGoal: 'Fasting goal completed!',
+                lblStartFast: 'Fast Start Time',
+                lblStartEat: 'Eating Window Start',
+                lblCurrentPlan: 'Current Plan:',
+                lblWaterTitle: 'Water Tracker',
+                lblWaterUnit: 'Glasses (2.0 L)',
+                waterStatusGoal: 'Hydrated! ✨',
+                lblWeeklyStats: 'Weekly Overview',
+                lblFastingHistory: 'Fasting Logs',
+                lblBodyStatusHeader: 'Current Metabolic State',
+                lblGuestTitle: 'Sign In to Analyze BMI',
+                lblGuestSub: 'Connect phone number, enter height & weight to unlock personalized fat loss tips.',
+                lblProfileWeight: 'Weight',
+                lblProfileHeight: 'Height',
+                lblBmiCategory: 'BMI Status:',
+                lblFatlossGuideTitle: 'Personalized Fat Loss Guide',
+                lblSettingsTitle: 'Settings & Calendar',
+                lblExportCal: 'Export to Calendar',
+                lblExportCalSub: 'Set reminder for fasting completion',
+                lblInstallPWA: 'Add to Home Screen (PWA)',
+                lblInstallPWASub: 'Install app for offline access',
+                lblClearData: 'Clear All Data',
+                btnStartFast: 'Start Fasting',
+                btnStopFast: 'End Fasting',
+                btnPlanner: 'Schedule & Plan',
+                navTimer: 'Timer',
+                navActivity: 'Activity',
+                navProfile: 'Profile',
+                navMenu: 'Menu',
+                modalLoginTitle: 'Login / Sign Up',
+                modalLoginSub: 'Use phone number to calculate BMI',
+                lblLoginName: 'Your Name',
+                lblLoginPhone: 'Mobile Phone Number',
+                lblLoginHeight: 'Height (cm)',
+                lblLoginWeight: 'Weight (kg)',
+                modalPlanTitle: 'Select Fasting Plan',
+                plan168Desc: 'Fast 16 hrs / Eat 8 hrs (Recommended for beginners)',
+                plan186Desc: 'Fast 18 hrs / Eat 6 hrs (Fat burn accelerator)',
+                plan204Desc: 'Fast 20 hrs / Eat 4 hrs (Warrior Diet)',
+                modalPlannerTitle: 'Fasting Schedule Planner',
+                modalPlannerSub: 'Set start and eating window times ahead',
+                modeBtnStart: 'Start Time Mode',
+                modeBtnCustom: 'Custom Duration Mode',
+                lblPlannerStartTime: 'Fasting Start Date & Time:',
+                lblPlannerTargetHrs: 'Target Fasting Hours:',
+                lblPlannerCustStart: 'Fasting Start Time:',
+                lblPlannerCustEnd: 'Eating Window Start Time:',
+                lblPlannerSummaryTitle: 'Fasting Schedule Summary',
+                lblSummaryDuration: 'Fasting Duration:',
+                lblSummaryStart: 'Start Fasting:',
+                lblSummaryEnd: 'Eating Window Starts:',
+                btnPlannerCancel: 'Cancel',
+                btnPlannerSave: 'Apply Schedule',
+                modalEditProfTitle: 'Edit Personal Profile',
+                toastWaterFull: 'Awesome! You are fully hydrated today 🎉',
+                toastStartFast: 'Fasting started! Stay strong!',
+                toastStopFast: 'Fast completed! Total {hrs} hrs.',
+                toastClearData: 'All data cleared successfully'
+            }
+        };
+
+        let activeScheduleMode = 'start';
+        let timerInterval = null;
+        let deferredPrompt = null;
+
+        // Load persisted state on startup
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadState();
+            setupPWA();
+            renderLogs();
+            renderWeeklyChart();
+            applyLanguageUI();
+            updateHeaderAvatar();
+            renderProfileView();
+            updateUI();
+
+            // Refresh timer every second
+            timerInterval = setInterval(updateTimer, 1000);
+        });
+
+        // Save & Load LocalStorage
+        function saveState() {
+            localStorage.setItem('if_tracker_state', JSON.stringify(appState));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('if_tracker_state');
+            if (saved) {
+                try {
+                    appState = { ...appState, ...JSON.parse(saved) };
+                } catch(e) {
+                    console.error("Failed loading local storage", e);
+                }
+            }
+        }
+
+        // Gallery Image Upload Logic
+        function triggerGalleryUpload() {
+            document.getElementById('global-avatar-picker').click();
+        }
+
+        function handleImageSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 3 * 1024 * 1024) {
+                showToast(appState.lang === 'th' ? 'ขนาดไฟล์รูปภาพใหญ่เกินไป (ไม่เกิน 3MB)' : 'Image size is too large (max 3MB)');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Img = e.target.result;
+                if (appState.userProfile) {
+                    appState.userProfile.avatarUrl = base64Img;
+                } else {
+                    appState.userProfile = { avatarUrl: base64Img };
+                }
+                saveState();
+                updateHeaderAvatar();
+                renderProfileView();
+                showToast(appState.lang === 'th' ? 'อัปเดตรูปโปรไฟล์เรียบร้อย' : 'Profile photo updated');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Header Avatar Logic
+        function handleAvatarClick() {
+            if (!appState.userProfile) {
+                openLoginModal();
+            } else {
+                switchTab('profile');
+            }
+        }
+
+        function updateHeaderAvatar() {
+            const container = document.getElementById('avatar-icon-container');
+            const statusDot = document.getElementById('avatar-status-dot');
+
+            if (appState.userProfile) {
+                if (appState.userProfile.avatarUrl) {
+                    container.innerHTML = `<img src="${appState.userProfile.avatarUrl}" class="w-full h-full object-cover">`;
+                } else {
+                    const firstLetter = (appState.userProfile.name || 'U').charAt(0).toUpperCase();
+                    container.innerHTML = `<span class="font-bold text-mint-primary">${firstLetter}</span>`;
+                }
+                statusDot.classList.add('hidden');
+            } else {
+                container.innerHTML = `<i data-lucide="user" class="w-5 h-5 text-gray-500"></i>`;
+                statusDot.classList.remove('hidden');
+            }
+            lucide.createIcons();
+        }
+
+        // Login Modal Flows
+        function openLoginModal() {
+            document.getElementById('login-step-1').classList.remove('hidden');
+            document.getElementById('login-step-2').classList.add('hidden');
+            document.getElementById('modal-login').classList.remove('hidden');
+        }
+
+        function proceedToOtp() {
+            const name = document.getElementById('input-login-name').value.trim();
+            const phone = document.getElementById('input-login-phone').value.trim();
+            const height = parseFloat(document.getElementById('input-login-height').value);
+            const weight = parseFloat(document.getElementById('input-login-weight').value);
+
+            if (!name || !phone || !height || !weight || height <= 0 || weight <= 0) {
+                showToast(appState.lang === 'th' ? 'กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง' : 'Please fill in all fields correctly');
+                return;
+            }
+
+            pendingLoginData = { name, phone, height, weight };
+            document.getElementById('display-otp-phone').innerText = phone;
+            document.getElementById('login-step-1').classList.add('hidden');
+            document.getElementById('login-step-2').classList.remove('hidden');
+        }
+
+        function backToLoginStep1() {
+            document.getElementById('login-step-2').classList.add('hidden');
+            document.getElementById('login-step-1').classList.remove('hidden');
+        }
+
+        function verifyOtpAndLogin() {
+            if (!pendingLoginData) return;
+
+            const { bmi, categoryKey } = calculateBMI(pendingLoginData.weight, pendingLoginData.height);
+
+            const existingAvatar = appState.userProfile ? appState.userProfile.avatarUrl : null;
+
+            appState.userProfile = {
+                name: pendingLoginData.name,
+                phone: pendingLoginData.phone,
+                height: pendingLoginData.height,
+                weight: pendingLoginData.weight,
+                bmi: bmi,
+                categoryKey: categoryKey,
+                avatarUrl: existingAvatar
+            };
+
+            saveState();
+            updateHeaderAvatar();
+            renderProfileView();
+            closeModal('modal-login');
+            showToast(appState.lang === 'th' ? 'เข้าสู่ระบบสำเร็จแล้ว!' : 'Signed in successfully!');
+        }
+
+        function handleLogout() {
+            if (confirm(appState.lang === 'th' ? 'คุณต้องการออกจากระบบใช่หรือไม่?' : 'Are you sure you want to log out?')) {
+                appState.userProfile = null;
+                saveState();
+                updateHeaderAvatar();
+                renderProfileView();
+                showToast(appState.lang === 'th' ? 'ออกจากระบบเรียบร้อย' : 'Logged out');
+            }
+        }
+
+        function calculateBMI(weight, height) {
+            const heightM = height / 100;
+            const bmi = (weight / (heightM * heightM)).toFixed(1);
+            
+            let categoryKey = 'normal';
+            if (bmi < 18.5) categoryKey = 'underweight';
+            else if (bmi < 23.0) categoryKey = 'normal';
+            else if (bmi < 25.0) categoryKey = 'overweight';
+            else categoryKey = 'obese';
+
+            return { bmi, categoryKey };
+        }
+
+        // Profile View & Fat Loss Recommendations
+        function renderProfileView() {
+            const guestPrompt = document.getElementById('profile-guest-prompt');
+            const userCard = document.getElementById('profile-user-card');
+
+            if (!appState.userProfile || !appState.userProfile.name) {
+                guestPrompt.classList.remove('hidden');
+                userCard.classList.add('hidden');
+                return;
+            }
+
+            guestPrompt.classList.add('hidden');
+            userCard.classList.remove('hidden');
+
+            const p = appState.userProfile;
+            const isTh = appState.lang === 'th';
+
+            // Avatar Rendering
+            const avatarDisplay = document.getElementById('prof-avatar-display');
+            if (p.avatarUrl) {
+                avatarDisplay.innerHTML = `<img src="${p.avatarUrl}" class="w-full h-full object-cover rounded-2xl">`;
+            } else {
+                avatarDisplay.innerHTML = `<span id="prof-avatar-letter">${(p.name || 'U').charAt(0).toUpperCase()}</span>`;
+            }
+
+            document.getElementById('prof-display-name').innerText = p.name;
+            document.getElementById('prof-display-phone').innerText = p.phone;
+            document.getElementById('prof-display-weight').innerText = p.weight;
+            document.getElementById('prof-display-height').innerText = p.height;
+            document.getElementById('prof-display-bmi').innerText = p.bmi;
+
+            const categories = {
+                underweight: { th: 'น้ำหนักน้อยกว่าเกณฑ์', en: 'Underweight', color: 'bg-blue-500' },
+                normal: { th: 'สมส่วน สุขภาพดี', en: 'Normal Weight', color: 'bg-emerald-500' },
+                overweight: { th: 'น้ำหนักเกินเกณฑ์', en: 'Overweight', color: 'bg-amber-500' },
+                obese: { th: 'เริ่มมีภาวะอ้วน', en: 'Obese', color: 'bg-red-500' }
+            };
+
+            const catInfo = categories[p.categoryKey] || categories.normal;
+            const tagEl = document.getElementById('bmi-status-tag');
+            tagEl.innerText = isTh ? catInfo.th : catInfo.en;
+            tagEl.className = `px-3 py-1 rounded-full text-xs font-bold text-white ${catInfo.color}`;
+
+            renderFatLossTips(p);
+        }
+
+        function renderFatLossTips(profile) {
+            const container = document.getElementById('fatloss-guide-container');
+            const isTh = appState.lang === 'th';
+            const proteinGoal = (profile.weight * 1.6).toFixed(0);
+
+            const tipsTh = [
+                {
+                    title: '1. กินโปรตีนให้ถึงเป้าหมาย (High Protein)',
+                    desc: `เพื่อรักษาพรรณกล้ามเนื้อและเร่งเผาผลาญ คุณควรได้รับโปรตีนประมาณ <b>${proteinGoal} กรัม/วัน</b> (เน้น อกไก่, ไข่ต้ม, ปลา, เต้าหู้)`
+                },
+                {
+                    title: '2. แนะนำแผน IF ที่เหมาะสม',
+                    desc: profile.categoryKey === 'normal' || profile.categoryKey === 'underweight' 
+                        ? 'แนะนำแผน <b>16:8</b> แบบสบายๆ เน้นกระชับสัดส่วน ไม่ควรอดอาหารเกิน 18 ชม.' 
+                        : 'แนะนำแผน <b>18:6 หรือ 20:4</b> เพื่อเร่งกระบวนการ Autophagy และกระตุ้นไขมันสะสมมาใช้เป็นพลังงานได้ดียิ่งขึ้น'
+                },
+                {
+                    title: '3. เครื่องดื่มช่วง Fasting (Zero Calorie)',
+                    desc: 'ดื่มน้ำเปล่าอย่างน้อย 2-3 ลิตร/วัน สามารถจิบ <b>กาแฟดำไม่ใส่น้ำตาล</b> หรือชาเขียวร้อน เพื่อช่วยลดความอยากอาหารช่วงอด'
+                },
+                {
+                    title: '4. เวทเทรนนิ่งสร้างกล้ามเนื้อ (Resistance Training)',
+                    desc: 'ออกกำลังกายแบบมีแรงต้าน (บอดี้เวท/ยกเวท) 3-4 วัน/สัปดาห์ เพื่อป้องกันไม่ให้ระบบเผาผลาญ (BMR) ลดลงขณะลีนหุ่น'
+                }
+            ];
+
+            const tipsEn = [
+                {
+                    title: '1. Hit Your Daily Protein Target',
+                    desc: `To preserve muscle mass during fat loss, aim for roughly <b>${proteinGoal}g of protein/day</b> (Chicken breast, eggs, fish, tofu).`
+                },
+                {
+                    title: '2. Recommended Fasting Plan',
+                    desc: profile.categoryKey === 'normal' || profile.categoryKey === 'underweight'
+                        ? 'Standard <b>16:8 Plan</b> is recommended for lean maintenance.'
+                        : 'Advanced <b>18:6 or 20:4 Plan</b> is recommended to boost fat oxidation.'
+                },
+                {
+                    title: '3. Zero-Calorie Fasting Drinks',
+                    desc: 'Drink at least 2.0-3.0 Liters of water daily. Black coffee or green tea without sugar are allowed during fasting.'
+                },
+                {
+                    title: '4. Resistance Training (Weight Lifting)',
+                    desc: 'Combine IF with strength training 3-4 times a week to maintain muscle mass and sustain BMR metabolism.'
+                }
+            ];
+
+            const tips = isTh ? tipsTh : tipsEn;
+
+            container.innerHTML = tips.map(tip => `
+                <div class="p-3 bg-white/80 rounded-2xl border border-gray-100 shadow-sm space-y-1">
+                    <div class="font-bold text-slate-dark text-xs">${tip.title}</div>
+                    <div class="text-[11px] text-gray-600 leading-relaxed">${tip.desc}</div>
+                </div>
+            `).join('');
+        }
+
+        function openEditProfileModal() {
+            if (!appState.userProfile) return;
+            document.getElementById('input-edit-name').value = appState.userProfile.name;
+            document.getElementById('input-edit-height').value = appState.userProfile.height;
+            document.getElementById('input-edit-weight').value = appState.userProfile.weight;
+            document.getElementById('modal-edit-profile').classList.remove('hidden');
+        }
+
+        function saveProfileChanges() {
+            const n = document.getElementById('input-edit-name').value.trim();
+            const h = parseFloat(document.getElementById('input-edit-height').value);
+            const w = parseFloat(document.getElementById('input-edit-weight').value);
+
+            if (!n || !h || !w || h <= 0 || w <= 0) {
+                showToast(appState.lang === 'th' ? 'กรุณากรอกข้อมูลให้ถูกต้อง' : 'Please enter valid values');
+                return;
+            }
+
+            const { bmi, categoryKey } = calculateBMI(w, h);
+            appState.userProfile.name = n;
+            appState.userProfile.height = h;
+            appState.userProfile.weight = w;
+            appState.userProfile.bmi = bmi;
+            appState.userProfile.categoryKey = categoryKey;
+
+            saveState();
+            updateHeaderAvatar();
+            renderProfileView();
+            closeModal('modal-edit-profile');
+            showToast(appState.lang === 'th' ? 'อัปเดตข้อมูลโปรไฟล์แล้ว' : 'Profile updated successfully');
+        }
+
+        // Toggle Language Support
+        function toggleLanguage() {
+            appState.lang = appState.lang === 'th' ? 'en' : 'th';
+            saveState();
+            applyLanguageUI();
+            updateUI();
+            renderLogs();
+            renderWeeklyChart();
+            renderProfileView();
+        }
+
+        function applyLanguageUI() {
+            const lang = appState.lang;
+            const t = translations[lang];
+
+            // Header Language Badge
+            document.getElementById('lang-flag').innerText = lang === 'th' ? '🇹🇭' : '🇬🇧';
+            document.getElementById('lang-code').innerText = lang.toUpperCase();
+
+            // Dynamic Element Texts
+            document.getElementById('lbl-header-sub').innerText = t.headerSub;
+            document.getElementById('header-title').innerText = t.headerTitle;
+            document.getElementById('lbl-start-fast-time').innerText = t.lblStartFast;
+            document.getElementById('lbl-start-eat-time').innerText = t.lblStartEat;
+            document.getElementById('lbl-current-plan').innerText = t.lblCurrentPlan;
+            document.getElementById('lbl-water-title').innerText = t.lblWaterTitle;
+            document.getElementById('lbl-water-unit').innerText = t.lblWaterUnit;
+            document.getElementById('water-badge-status').innerText = t.waterStatusGoal;
+            document.getElementById('lbl-weekly-stats').innerHTML = `<i data-lucide="bar-chart-2" class="w-5 h-5 mr-2 text-mint-primary"></i> ${t.lblWeeklyStats}`;
+            document.getElementById('lbl-fasting-history').innerText = t.lblFastingHistory;
+            document.getElementById('lbl-body-status-header').innerText = t.lblBodyStatusHeader;
+            
+            // Profile Tab Texts
+            document.getElementById('lbl-guest-title').innerText = t.lblGuestTitle;
+            document.getElementById('lbl-guest-sub').innerText = t.lblGuestSub;
+            document.getElementById('lbl-profile-weight').innerText = t.lblProfileWeight;
+            document.getElementById('lbl-profile-height').innerText = t.lblProfileHeight;
+            document.getElementById('lbl-bmi-category').innerText = t.lblBmiCategory;
+            document.getElementById('lbl-fatloss-guide-title').innerHTML = `<i data-lucide="sparkles" class="w-4 h-4 text-coral-pink mr-2"></i> ${t.lblFatlossGuideTitle}`;
+
+            document.getElementById('lbl-settings-title').innerText = t.lblSettingsTitle;
+            document.getElementById('lbl-export-cal').innerText = t.lblExportCal;
+            document.getElementById('lbl-export-cal-sub').innerText = t.lblExportCalSub;
+            document.getElementById('lbl-install-pwa').innerText = t.lblInstallPWA;
+            document.getElementById('lbl-install-pwa-sub').innerText = t.lblInstallPWASub;
+            document.getElementById('lbl-clear-data').innerText = t.lblClearData;
+
+            document.getElementById('btn-planner-text').innerText = t.btnPlanner;
+            document.getElementById('nav-lbl-timer').innerText = t.navTimer;
+            document.getElementById('nav-lbl-activity').innerText = t.navActivity;
+            document.getElementById('nav-lbl-profile').innerText = t.navProfile;
+            document.getElementById('nav-lbl-menu').innerText = t.navMenu;
+
+            // Modals
+            document.getElementById('modal-login-title').innerText = t.modalLoginTitle;
+            document.getElementById('modal-login-sub').innerText = t.modalLoginSub;
+            document.getElementById('lbl-login-name').innerText = t.lblLoginName;
+            document.getElementById('lbl-login-phone').innerText = t.lblLoginPhone;
+            document.getElementById('lbl-login-height').innerText = t.lblLoginHeight;
+            document.getElementById('lbl-login-weight').innerText = t.lblLoginWeight;
+
+            document.getElementById('modal-plan-title').innerText = t.modalPlanTitle;
+            document.getElementById('plan-desc-168').innerText = t.plan168Desc;
+            document.getElementById('plan-desc-186').innerText = t.plan186Desc;
+            document.getElementById('plan-desc-204').innerText = t.plan204Desc;
+
+            document.getElementById('modal-planner-title').innerText = t.modalPlannerTitle;
+            document.getElementById('modal-planner-sub').innerText = t.modalPlannerSub;
+            document.getElementById('mode-btn-start').innerText = t.modeBtnStart;
+            document.getElementById('mode-btn-custom').innerText = t.modeBtnCustom;
+            document.getElementById('lbl-planner-start-time').innerText = t.lblPlannerStartTime;
+            document.getElementById('lbl-planner-target-hrs').innerText = t.lblPlannerTargetHrs;
+            document.getElementById('lbl-planner-cust-start').innerText = t.lblPlannerCustStart;
+            document.getElementById('lbl-planner-cust-end').innerText = t.lblPlannerCustEnd;
+            document.getElementById('lbl-planner-summary-title').innerHTML = `<i data-lucide="sparkles" class="w-4 h-4 mr-1.5"></i> ${t.lblPlannerSummaryTitle}`;
+            document.getElementById('lbl-summary-duration').innerText = t.lblSummaryDuration;
+            document.getElementById('lbl-summary-start').innerText = t.lblSummaryStart;
+            document.getElementById('lbl-summary-end').innerText = t.lblSummaryEnd;
+            document.getElementById('btn-planner-cancel').innerText = t.btnPlannerCancel;
+            document.getElementById('btn-planner-save').innerText = t.btnPlannerSave;
+            document.getElementById('modal-edit-prof-title').innerText = t.modalEditProfTitle;
+
+            lucide.createIcons();
+        }
+
+        // Fasting Timer Core Calculations
+        function updateTimer() {
+            const t = translations[appState.lang];
+            const locale = appState.lang === 'th' ? 'th-TH' : 'en-US';
+
+            if (!appState.isFasting || !appState.startTime) {
+                document.getElementById('timer-display').innerText = "00h 00m";
+                document.getElementById('timer-subtext').innerText = t.timerSubtextIdle;
+                document.getElementById('target-end-time').innerText = `${appState.lang === 'th' ? 'สิ้นสุดเวลา' : 'End Time'}: --:--`;
+                document.getElementById('display-start-time').innerText = "--:--";
+                document.getElementById('display-eat-time').innerText = "--:--";
+                updateProgressCircle(0);
+                updateBodyStatus(0);
+                return;
+            }
+
+            const now = Date.now();
+            const elapsedMs = Math.max(0, now - appState.startTime);
+            
+            // Calculate Target End Time
+            const targetMs = appState.targetEndTime ? (appState.targetEndTime - appState.startTime) : (appState.planHours * 3600 * 1000);
+            const remainingMs = Math.max(0, targetMs - elapsedMs);
+
+            // Calculations
+            const elapsedHours = Math.floor(elapsedMs / (1000 * 3600));
+            const elapsedMinutes = Math.floor((elapsedMs % (1000 * 3600)) / (1000 * 60));
+
+            const remHours = Math.floor(remainingMs / (1000 * 3600));
+            const remMinutes = Math.floor((remainingMs % (1000 * 3600)) / (1000 * 60));
+
+            // Format Timer Text
+            document.getElementById('timer-display').innerText = 
+                `${String(elapsedHours).padStart(2, '0')}h ${String(elapsedMinutes).padStart(2, '0')}m`;
+
+            if (remainingMs > 0) {
+                document.getElementById('timer-subtext').innerText = appState.lang === 'th' ? `เหลือเวลาอีก ${remHours}h ${remMinutes}m` : `${remHours}h ${remMinutes}m remaining`;
+                document.getElementById('timer-status-badge').innerText = t.timerStatusFasting;
+                document.getElementById('timer-status-badge').className = "px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full bg-mint-light text-mint-primary mb-1";
+            } else {
+                document.getElementById('timer-subtext').innerText = t.timerSubtextGoal;
+                document.getElementById('timer-status-badge').innerText = t.timerStatusGoal;
+                document.getElementById('timer-status-badge').className = "px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full bg-amber-100 text-amber-700 mb-1";
+            }
+
+            // Timeline Banner Formats
+            const startDate = new Date(appState.startTime);
+            const endDate = new Date(appState.startTime + targetMs);
+            
+            const startFormatted = startDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+            const endFormatted = endDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+
+            document.getElementById('display-start-time').innerText = startFormatted;
+            document.getElementById('display-eat-time').innerText = endFormatted;
+            document.getElementById('target-end-time').innerText = `${appState.lang === 'th' ? 'สิ้นสุดเวลา' : 'Ends at'}: ${endFormatted}`;
+
+            // Progress Ring Offset
+            const progressPercent = Math.min(100, (elapsedMs / targetMs) * 100);
+            updateProgressCircle(progressPercent);
+
+            // Body Metabolic Status Update
+            updateBodyStatus(elapsedHours + (elapsedMinutes/60));
+        }
+
+        function updateProgressCircle(percent) {
+            const circle = document.getElementById('progress-circle');
+            const circumference = 2 * Math.PI * 82; // r=82 -> ~515.22
+            const offset = circumference - (percent / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+        }
+
+        // Real-time Body Status Engine based on Fasting Hours
+        function updateBodyStatus(hours) {
+            const titleEl = document.getElementById('body-status-title');
+            const descEl = document.getElementById('body-status-desc');
+            const iconBg = document.getElementById('body-status-icon-bg');
+            const iconEl = document.getElementById('body-status-icon');
+            const badgeLive = document.getElementById('body-status-badge-live');
+            const isTh = appState.lang === 'th';
+
+            // Bars
+            const p1 = document.getElementById('bar-phase-1');
+            const p2 = document.getElementById('bar-phase-2');
+            const p3 = document.getElementById('bar-phase-3');
+            const p4 = document.getElementById('bar-phase-4');
+
+            // Reset Bar Opacities
+            [p1, p2, p3, p4].forEach(bar => bar.classList.add('opacity-30'));
+
+            badgeLive.innerText = `${hours.toFixed(1)} ${isTh ? 'ชม.' : 'hrs'}`;
+
+            if (hours < 4) {
+                // Phase 1: Anabolic (0-4h)
+                p1.classList.remove('opacity-30');
+                titleEl.innerText = isTh ? "Anabolic Phase (ย่อยและดูดซึม)" : "Anabolic State (Digestion)";
+                descEl.innerText = isTh ? "ระดับน้ำตาลในเลือดเพิ่มขึ้น ร่างกายกำลังย่อยและดูดซึมสารอาหารจากมื้อล่าสุด" : "Blood sugar rises as your body digests and absorbs nutrients from your last meal.";
+                iconBg.className = "w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600 shadow-sm transition-all duration-300";
+                iconEl.setAttribute('data-lucide', 'utensils');
+                badgeLive.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-600 flex items-center space-x-1";
+            } else if (hours < 12) {
+                // Phase 2: Blood Sugar Normalization (4-12h)
+                p2.classList.remove('opacity-30');
+                titleEl.innerText = isTh ? "Blood Sugar Drop (ปรับระดับน้ำตาล)" : "Blood Sugar Normalization";
+                descEl.innerText = isTh ? "ระดับอินซูลินเริ่มลดลง ร่างกายหยุดสะสมพลังงานและเตรียมพร้อมดึงไกลโคเจนมาใช้" : "Insulin levels drop. The body stops storing energy and prepares to burn glycogen.";
+                iconBg.className = "w-10 h-10 rounded-2xl bg-teal-100 flex items-center justify-center flex-shrink-0 text-teal-600 shadow-sm transition-all duration-300";
+                iconEl.setAttribute('data-lucide', 'trending-down');
+                badgeLive.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-600 flex items-center space-x-1";
+            } else if (hours < 16) {
+                // Phase 3: Glycogen Depletion & Fat Burning (12-16h)
+                p3.classList.remove('opacity-30');
+                titleEl.innerText = isTh ? "Fat Burning Zone (ดึงไขมันมาใช้)" : "Fat Burning Zone";
+                descEl.innerText = isTh ? "ไกลโคเจนในตับหมดลง ร่างกายสลับมาดึงไขมันสะสมมาสลายเป็นพลังงานหลัก" : "Glycogen stores are depleted. Body transitions into active fat-burning zone.";
+                iconBg.className = "w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 shadow-sm transition-all duration-300";
+                iconEl.setAttribute('data-lucide', 'flame');
+                badgeLive.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 flex items-center space-x-1";
+            } else {
+                // Phase 4: Ketosis & Autophagy (16h+)
+                p4.classList.remove('opacity-30');
+                titleEl.innerText = isTh ? "Ketosis & Autophagy (คีโตซิสและซ่อมแซมเซลล์)" : "Ketosis & Autophagy State";
+                descEl.innerText = isTh ? "เผาผลาญไขมันเข้มข้น และเริ่มเกิดกระบวนการ Autophagy กวาดล้างและซ่อมแซมเซลล์เสื่อมสภาพ" : "Ketosis intensifies fat burn while cellular repair (Autophagy) is triggered.";
+                iconBg.className = "w-10 h-10 rounded-2xl bg-purple-100 flex items-center justify-center flex-shrink-0 text-purple-600 shadow-sm transition-all duration-300";
+                iconEl.setAttribute('data-lucide', 'dna');
+                badgeLive.className = "px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-600 flex items-center space-x-1";
+            }
+            lucide.createIcons();
+        }
+
+        // Toggle Fasting Start / Stop
+        function toggleFastState() {
+            const t = translations[appState.lang];
+
+            if (!appState.isFasting) {
+                // Start Fasting Now
+                appState.isFasting = true;
+                appState.startTime = Date.now();
+                appState.targetEndTime = appState.startTime + (appState.planHours * 3600 * 1000);
+                showToast(t.toastStartFast);
+            } else {
+                // Finish / Break Fast
+                const durationHours = ((Date.now() - appState.startTime) / (1000 * 3600)).toFixed(1);
+                
+                // Add to History Logs
+                appState.historyLogs.unshift({
+                    id: Date.now(),
+                    date: new Date().toLocaleDateString(appState.lang === 'th' ? 'th-TH' : 'en-US', { day: 'numeric', month: 'short' }),
+                    plan: appState.planName,
+                    hours: durationHours,
+                    completed: durationHours >= appState.planHours
+                });
+
+                appState.isFasting = false;
+                appState.startTime = null;
+                appState.targetEndTime = null;
+                showToast(t.toastStopFast.replace('{hrs}', durationHours));
+            }
+
+            saveState();
+            updateUI();
+            renderLogs();
+            renderWeeklyChart();
+        }
+
+        function updateUI() {
+            const t = translations[appState.lang];
+            const btnText = document.getElementById('btn-toggle-text');
+            const btnIcon = document.getElementById('btn-toggle-icon');
+            const btnToggle = document.getElementById('btn-toggle-fast');
+
+            if (appState.isFasting) {
+                btnText.innerText = t.btnStopFast;
+                btnIcon.setAttribute('data-lucide', 'square');
+                btnToggle.className = "btn-soft-primary py-4 rounded-2xl text-sm font-bold flex items-center justify-center space-x-2 bg-coral-pink shadow-lg hover:bg-red-500";
+            } else {
+                btnText.innerText = t.btnStartFast;
+                btnIcon.setAttribute('data-lucide', 'play');
+                btnToggle.className = "btn-soft-primary py-4 rounded-2xl text-sm font-bold flex items-center justify-center space-x-2 bg-mint-primary shadow-lg";
+            }
+
+            document.getElementById('current-plan-name').innerText = `${appState.planName} Plan`;
+            updateWaterUI();
+            
+            lucide.createIcons();
+            updateTimer();
+        }
+
+        // Water Tracking Logic & Dynamic Completed Style
+        function adjustWater(amount) {
+            const previousCount = appState.waterCount;
+            appState.waterCount = Math.max(0, appState.waterCount + amount);
+            
+            saveState();
+            updateWaterUI();
+
+            if (previousCount < 8 && appState.waterCount >= 8) {
+                showToast(translations[appState.lang].toastWaterFull);
+            }
+        }
+
+        function updateWaterUI() {
+            const count = appState.waterCount;
+            document.getElementById('water-count').innerText = count;
+
+            const card = document.getElementById('water-card');
+            const iconBg = document.getElementById('water-icon-bg');
+            const icon = document.getElementById('water-icon');
+            const badge = document.getElementById('water-badge-status');
+
+            if (count >= 8) {
+                card.className = "glass-card p-4 shadow-glass flex items-center justify-between border-2 border-mint-primary/60 bg-emerald-50/70 transition-all duration-500";
+                iconBg.className = "w-10 h-10 rounded-2xl bg-mint-primary text-white flex items-center justify-center shadow-md transition-all duration-300";
+                icon.setAttribute('data-lucide', 'check-circle-2');
+                badge.classList.remove('hidden');
+            } else {
+                card.className = "glass-card p-4 shadow-glass flex items-center justify-between transition-all duration-500";
+                iconBg.className = "w-10 h-10 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center transition-all duration-300";
+                icon.setAttribute('data-lucide', 'droplet');
+                badge.classList.add('hidden');
+            }
+            lucide.createIcons();
+        }
+
+        // Fasting Planner Modal Logics
+        function openSchedulePlannerModal() {
+            const now = new Date();
+            const startVal = appState.startTime ? new Date(appState.startTime) : now;
+            const startIso = new Date(startVal.getTime() - (startVal.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+
+            const targetVal = appState.targetEndTime ? new Date(appState.targetEndTime) : new Date(startVal.getTime() + (appState.planHours * 3600 * 1000));
+            const endIso = new Date(targetVal.getTime() - (targetVal.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+
+            document.getElementById('input-schedule-start').value = startIso;
+            document.getElementById('input-custom-start').value = startIso;
+            document.getElementById('input-custom-end').value = endIso;
+
+            setScheduleMode('start');
+            calculatePlannerSummary();
+            document.getElementById('modal-schedule-planner').classList.remove('hidden');
+        }
+
+        function setScheduleMode(mode) {
+            activeScheduleMode = mode;
+            const btnStart = document.getElementById('mode-btn-start');
+            const btnCustom = document.getElementById('mode-btn-custom');
+            const containerStart = document.getElementById('planner-start-container');
+            const containerCustom = document.getElementById('planner-custom-container');
+
+            if (mode === 'start') {
+                btnStart.className = "py-2 text-xs font-bold rounded-xl bg-white text-slate-dark shadow-sm transition-all";
+                btnCustom.className = "py-2 text-xs font-bold rounded-xl text-gray-500 hover:text-slate-dark transition-all";
+                containerStart.classList.remove('hidden');
+                containerCustom.classList.add('hidden');
+            } else {
+                btnCustom.className = "py-2 text-xs font-bold rounded-xl bg-white text-slate-dark shadow-sm transition-all";
+                btnStart.className = "py-2 text-xs font-bold rounded-xl text-gray-500 hover:text-slate-dark transition-all";
+                containerCustom.classList.remove('hidden');
+                containerStart.classList.add('hidden');
+            }
+            calculatePlannerSummary();
+        }
+
+        function calculatePlannerSummary() {
+            let startMs = 0;
+            let endMs = 0;
+            const isTh = appState.lang === 'th';
+            const locale = isTh ? 'th-TH' : 'en-US';
+
+            if (activeScheduleMode === 'start') {
+                const startInput = document.getElementById('input-schedule-start').value;
+                const hoursInput = parseFloat(document.getElementById('input-schedule-hours').value) || 16;
+                startMs = startInput ? new Date(startInput).getTime() : Date.now();
+                endMs = startMs + (hoursInput * 3600 * 1000);
+            } else {
+                const startInput = document.getElementById('input-custom-start').value;
+                const endInput = document.getElementById('input-custom-end').value;
+                startMs = startInput ? new Date(startInput).getTime() : Date.now();
+                endMs = endInput ? new Date(endInput).getTime() : (startMs + 16 * 3600 * 1000);
+            }
+
+            const diffMs = Math.max(0, endMs - startMs);
+            const totalHours = Math.floor(diffMs / (1000 * 3600));
+            const totalMins = Math.floor((diffMs % (1000 * 3600)) / (1000 * 60));
+
+            const startDate = new Date(startMs);
+            const endDate = new Date(endMs);
+
+            document.getElementById('summary-fast-duration').innerText = isTh ? `${totalHours} ชั่วโมง ${totalMins} นาที` : `${totalHours} Hours ${totalMins} Mins`;
+            document.getElementById('summary-start-formatted').innerText = `${startDate.toLocaleDateString(locale, {day:'numeric', month:'short'})} ${startDate.toLocaleTimeString(locale, {hour:'2-digit', minute:'2-digit'})}`;
+            document.getElementById('summary-end-formatted').innerText = `${endDate.toLocaleDateString(locale, {day:'numeric', month:'short'})} ${endDate.toLocaleTimeString(locale, {hour:'2-digit', minute:'2-digit'})}`;
+        }
+
+        function applyFastingSchedule() {
+            let startMs = 0;
+            let endMs = 0;
+            let hoursCalculated = 16;
+
+            if (activeScheduleMode === 'start') {
+                const startInput = document.getElementById('input-schedule-start').value;
+                hoursCalculated = parseFloat(document.getElementById('input-schedule-hours').value) || 16;
+                startMs = new Date(startInput).getTime();
+                endMs = startMs + (hoursCalculated * 3600 * 1000);
+            } else {
+                const startInput = document.getElementById('input-custom-start').value;
+                const endInput = document.getElementById('input-custom-end').value;
+                startMs = new Date(startInput).getTime();
+                endMs = new Date(endInput).getTime();
+
+                if (endMs <= startMs) {
+                    showToast(appState.lang === 'th' ? "เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้นเสมอ" : "End time must be after start time");
+                    return;
+                }
+                hoursCalculated = Math.round((endMs - startMs) / (1000 * 3600));
+            }
+
+            appState.isFasting = true;
+            appState.startTime = startMs;
+            appState.targetEndTime = endMs;
+            appState.planHours = hoursCalculated;
+            appState.planName = `Custom ${hoursCalculated}h`;
+
+            saveState();
+            updateUI();
+            closeModal('modal-schedule-planner');
+            showToast(appState.lang === 'th' ? "บันทึกและตั้งเวลาวางแผนเรียบร้อยแล้ว" : "Schedule saved successfully");
+        }
+
+        // Plan Selection Logic
+        function openPlanModal() {
+            document.querySelectorAll('.plan-check').forEach(el => el.classList.add('opacity-0'));
+            const currentCheck = document.getElementById(`check-${appState.planName}`);
+            if (currentCheck) currentCheck.classList.remove('opacity-0');
+
+            document.getElementById('modal-plan').classList.remove('hidden');
+        }
+
+        function selectPlan(name, hours) {
+            appState.planName = name;
+            appState.planHours = hours;
+            if (appState.isFasting && appState.startTime) {
+                appState.targetEndTime = appState.startTime + (hours * 3600 * 1000);
+            }
+            saveState();
+            updateUI();
+            closeModal('modal-plan');
+            showToast(appState.lang === 'th' ? `เปลี่ยนแผนเป็น ${name} เรียบร้อย` : `Plan changed to ${name}`);
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // View Navigation Switches
+        function switchTab(tabName) {
+            ['dashboard', 'activity', 'profile', 'settings'].forEach(tab => {
+                const view = document.getElementById(`view-${tab}`);
+                const nav = document.getElementById(`nav-${tab}`);
+                if (tab === tabName) {
+                    view.classList.remove('hidden');
+                    view.classList.add('flex');
+                    nav.classList.add('text-mint-primary', 'font-bold');
+                    nav.classList.remove('text-gray-400');
+                } else {
+                    view.classList.add('hidden');
+                    view.classList.remove('flex');
+                    nav.classList.remove('text-mint-primary', 'font-bold');
+                    nav.classList.add('text-gray-400');
+                }
+            });
+            
+            const titles = {
+                'dashboard': translations[appState.lang].headerTitle,
+                'activity': translations[appState.lang].lblWeeklyStats,
+                'profile': translations[appState.lang].navProfile,
+                'settings': translations[appState.lang].lblSettingsTitle
+            };
+            document.getElementById('header-title').innerText = titles[tabName];
+            lucide.createIcons();
+        }
+
+        // Render History Logs
+        function renderLogs() {
+            const container = document.getElementById('fasting-logs-list');
+            const isTh = appState.lang === 'th';
+            document.getElementById('log-count-badge').innerText = `${appState.historyLogs.length} ${isTh ? 'รายการ' : 'items'}`;
+
+            if (appState.historyLogs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400 text-xs">
+                        ${isTh ? 'ยังไม่มีประวัติการทำ Fasting' : 'No fasting history logs found'}
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = appState.historyLogs.map(log => `
+                <div class="p-3 bg-white/80 rounded-2xl border border-gray-100 flex justify-between items-center text-xs">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-xl ${log.completed ? 'bg-mint-light text-mint-primary' : 'bg-orange-50 text-orange-500'} flex items-center justify-center font-bold">
+                            <i data-lucide="${log.completed ? 'check-circle' : 'clock'}" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-dark">${log.plan} (${log.hours} ${isTh ? 'ชม.' : 'hrs'})</div>
+                            <div class="text-[10px] text-gray-400">${log.date}</div>
+                        </div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${log.completed ? 'bg-mint-light text-mint-primary' : 'bg-gray-100 text-gray-500'}">
+                        ${log.completed ? (isTh ? 'สำเร็จ' : 'Goal Met') : (isTh ? 'ก่อนกำหนด' : 'Ended Early')}
+                    </span>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // Render Weekly Bar Chart
+        function renderWeeklyChart() {
+            const chartContainer = document.getElementById('weekly-chart');
+            const days = appState.lang === 'th' ? ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'] : ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+            const heights = [60, 80, 45, 100, 90, 70, 85];
+
+            chartContainer.innerHTML = days.map((day, idx) => `
+                <div class="flex flex-col items-center space-y-1 h-full justify-end">
+                    <div class="w-6 bg-mint-light rounded-t-xl overflow-hidden flex items-end h-24">
+                        <div class="w-full bg-mint-primary rounded-t-xl transition-all duration-500" style="height: ${heights[idx]}%"></div>
+                    </div>
+                    <span class="text-[10px] text-gray-400 font-medium">${day}</span>
+                </div>
+            `).join('');
+        }
+
+        // Add Event to Calendar (.ics File Export)
+        function addToCalendar() {
+            if (!appState.isFasting || !appState.startTime) {
+                showToast(appState.lang === 'th' ? "คุณต้องเริ่ม Fasting ก่อนส่งออกปฏิทิน" : "Please start fasting first to export calendar");
+                return;
+            }
+
+            const startTime = new Date(appState.startTime);
+            const endTime = appState.targetEndTime ? new Date(appState.targetEndTime) : new Date(appState.startTime + (appState.planHours * 3600 * 1000));
+
+            const formatDate = (date) => date.toISOString().replace(/-|:|\.\d+/g, '');
+
+            const icsContent = 
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//IF Fasting Tracker PWA//EN
+BEGIN:VEVENT
+SUMMARY:IF Fasting Target (${appState.planName})
+DESCRIPTION:Fasting completed according to ${appState.planName} target schedule!
+DTSTART:${formatDate(startTime)}
+DTEND:${formatDate(endTime)}
+END:VEVENT
+END:VCALENDAR`;
+
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.setAttribute('download', 'fasting-reminder.ics');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast(appState.lang === 'th' ? "ดาวน์โหลดไฟล์ตั้งเตือนปฏิทินเรียบร้อย" : "Calendar reminder downloaded");
+        }
+
+        // Clear All Storage
+        function clearAllData() {
+            const isTh = appState.lang === 'th';
+            if (confirm(isTh ? "คุณต้องการล้างข้อมูลประวัติและสถานะทั้งหมดใช่หรือไม่?" : "Are you sure you want to clear all data?")) {
+                localStorage.removeItem('if_tracker_state');
+                appState = {
+                    lang: appState.lang,
+                    userProfile: null,
+                    isFasting: false,
+                    startTime: null,
+                    targetEndTime: null,
+                    planHours: 16,
+                    planName: '16:8',
+                    waterCount: 0,
+                    historyLogs: []
+                };
+                updateHeaderAvatar();
+                renderProfileView();
+                updateUI();
+                renderLogs();
+                showToast(translations[appState.lang].toastClearData);
+            }
+        }
+
+        // UI Toast Notification
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // PWA Installation Handling & Service Worker
+        function setupPWA() {
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                const installBtn = document.getElementById('install-pwa-btn');
+                if (installBtn) installBtn.style.display = 'flex';
+            });
+
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    self.addEventListener('install', (e) => self.skipWaiting());
+                    self.addEventListener('activate', (e) => self.clients.claim());
+                    self.addEventListener('fetch', (e) => {
+                        e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'text/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW Register error:', err));
+            }
+        }
+
+        function triggerInstallPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        showToast(appState.lang === 'th' ? 'กำลังติดตั้งแอปพลิเคชัน...' : 'Installing PWA...');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                showToast(appState.lang === 'th' ? 'เบราว์เซอร์นี้ติดตั้งไว้แล้ว หรือไม่รองรับการติดตั้งอัตโนมัติ' : 'App already installed or browser not supported');
+            }
+        }
+    </script>
+</body>
+</html>
