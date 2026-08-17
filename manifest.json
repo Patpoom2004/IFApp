@@ -1,0 +1,24 @@
+{
+  "short_name": "IF Timer",
+  "name": "Personal IF Fasting Tracker",
+  "description": "แอปนับเวลาทำ IF สำหรับการลีนหุ่นส่วนตัว",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#F8F6F0",
+  "theme_color": "#3D9988",
+  "display": "standalone",
+  "orientation": "portrait"
+}
